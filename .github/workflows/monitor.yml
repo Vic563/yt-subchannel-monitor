@@ -22,6 +22,11 @@ concurrency:
   group: youtube-monitor
   cancel-in-progress: false
 
+# Grant write permissions to the workflow
+permissions:
+  contents: write
+  actions: read
+
 jobs:
   monitor:
     runs-on: ubuntu-latest

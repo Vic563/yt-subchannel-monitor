@@ -4,6 +4,11 @@ on:
   # Manual trigger only
   workflow_dispatch:
 
+# Grant read permissions to the workflow
+permissions:
+  contents: read
+  actions: read
+
 jobs:
   setup:
     runs-on: ubuntu-latest
