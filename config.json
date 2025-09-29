@@ -2,6 +2,7 @@
   "youtube": {
     "check_interval_minutes": 30,
     "max_results_per_channel": 5,
+    "max_video_age_days": 7,
     "scopes": ["https://www.googleapis.com/auth/youtube.readonly"]
   },
   "telegram": {

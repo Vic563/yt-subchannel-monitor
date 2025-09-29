@@ -6,7 +6,7 @@ import json
 import logging
 import argparse
 from typing import Dict, Any
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 
 from youtube_client import YouTubeClient
 from telegram_client import TelegramClient
@@ -162,6 +162,18 @@ class YouTubeMonitor:
                 logger.debug(f"No videos found for channel: {channel_name}")
                 return
             
+            # Check if video is recent enough to notify about
+            if not self._is_video_recent_enough(latest_video['published_at']):
+                logger.debug(f"Video too old, skipping: {latest_video['title']} by {channel_name}")
+                # Still update state to avoid checking this old video again
+                self.state_manager.update_channel_state(
+                    channel_id=channel_id,
+                    channel_name=channel_name,
+                    latest_video_id=latest_video['video_id'],
+                    video_timestamp=latest_video['published_at']
+                )
+                return
+            
             # Check if this is a new video
             if self.state_manager.is_new_video(channel_id, latest_video['video_id']):
                 logger.info(f"New video found: {latest_video['title']} by {channel_name}")
@@ -207,6 +219,38 @@ class YouTubeMonitor:
             published_at=video['published_at'],
             thumbnail_url=video.get('thumbnail_url')
         )
+    
+    def _is_video_recent_enough(self, published_at: str) -> bool:
+        """Check if a video is recent enough to notify about.
+        
+        Args:
+            published_at: Video publish timestamp (ISO format)
+            
+        Returns:
+            True if video is recent enough (within configured days)
+        """
+        try:
+            # Parse the published timestamp
+            published_time = datetime.fromisoformat(published_at.replace('Z', '+00:00'))
+            
+            # Get current time in UTC
+            current_time = datetime.now(timezone.utc)
+            
+            # Get max age from config (default to 7 days)
+            max_age_days = self.config.get("youtube", {}).get("max_video_age_days", 7)
+            max_age = timedelta(days=max_age_days)
+            
+            # Check if video is within the time window
+            age = current_time - published_time
+            is_recent = age <= max_age
+            
+            logger.debug(f"Video age: {age.days} days, max allowed: {max_age_days} days, recent: {is_recent}")
+            return is_recent
+            
+        except Exception as e:
+            logger.error(f"Error checking video age: {e}")
+            # If we can't parse the date, assume it's recent to be safe
+            return True
     
     def _test_connections(self) -> Dict[str, Any]:
         """Test connections to YouTube and Telegram APIs.
