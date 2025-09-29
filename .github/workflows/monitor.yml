@@ -1,9 +1,9 @@
 name: YouTube Subscription Monitor
 
 on:
-  # Run every 30 minutes
+  # Run every 2 hours
   schedule:
-    - cron: '*/30 * * * *'
+    - cron: '0 */2 * * *'
   
   # Allow manual trigger
   workflow_dispatch:
