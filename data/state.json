@@ -3,6 +3,8 @@
   "metadata": {
     "last_run": null,
     "total_notifications_sent": 0,
-    "version": "1.0.0"
+    "version": "1.0.0",
+    "reset_timestamp": "2024-09-29T14:30:00Z",
+    "reset_reason": "Fresh start after permission fix"
   }
 }
