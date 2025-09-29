@@ -1,0 +1,19 @@
+{
+  "youtube": {
+    "check_interval_minutes": 30,
+    "max_results_per_channel": 5,
+    "scopes": ["https://www.googleapis.com/auth/youtube.readonly"]
+  },
+  "telegram": {
+    "parse_mode": "HTML",
+    "disable_web_page_preview": false,
+    "notification_template": "🎬 <b>New Video Alert!</b>\n\n📺 <b>Channel:</b> {channel_name}\n📝 <b>Title:</b> {video_title}\n🔗 <b>Link:</b> {video_url}\n⏰ <b>Posted:</b> {time_ago}"
+  },
+  "general": {
+    "timezone": "UTC",
+    "dry_run": false,
+    "debug": false,
+    "max_retries": 3,
+    "retry_delay_seconds": 5
+  }
+}

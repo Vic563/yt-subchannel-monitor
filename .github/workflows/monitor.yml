@@ -1,0 +1,100 @@
+name: YouTube Subscription Monitor
+
+on:
+  # Run every 30 minutes
+  schedule:
+    - cron: '*/30 * * * *'
+  
+  # Allow manual trigger
+  workflow_dispatch:
+    inputs:
+      test_mode:
+        description: 'Run in test mode (only test connections)'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+# Prevent concurrent runs
+concurrency:
+  group: youtube-monitor
+  cancel-in-progress: false
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
+    steps:
+      # Checkout repository
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+      
+      # Set up Python
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+      
+      # Install dependencies
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      
+      # Configure git for commits
+      - name: Configure Git
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+      
+      # Run monitor
+      - name: Run YouTube Monitor
+        env:
+          YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
+          YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+          YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          if [ "${{ github.event.inputs.test_mode }}" == "true" ]; then
+            echo "Running in test mode..."
+            python src/youtube_monitor.py --test
+          else
+            echo "Running monitor..."
+            python src/youtube_monitor.py
+          fi
+      
+      # Commit state changes
+      - name: Commit state changes
+        if: github.event.inputs.test_mode != 'true'
+        run: |
+          # Check if there are changes to commit
+          if [ -n "$(git status --porcelain data/state.json)" ]; then
+            git add data/state.json
+            git commit -m "Update state: $(date -u +'%Y-%m-%d %H:%M:%S UTC')"
+            git push
+            echo "State file updated and pushed"
+          else
+            echo "No state changes to commit"
+          fi
+      
+      # Send error notification on failure
+      - name: Send error notification
+        if: failure()
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          # Simple curl command to send error notification
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            -d "chat_id=${TELEGRAM_CHAT_ID}" \
+            -d "text=⚠️ YouTube Monitor Error: The monitoring workflow failed. Check GitHub Actions logs for details." \
+            -d "parse_mode=HTML" || true
