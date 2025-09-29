@@ -63,8 +63,7 @@ class TelegramClient:
                     chat_id=self.chat_id,
                     photo=thumbnail_url,
                     caption=message_text,
-                    parse_mode=self.config["telegram"].get("parse_mode", ParseMode.HTML),
-                    disable_web_page_preview=self.config["telegram"].get("disable_web_page_preview", False)
+                    parse_mode=self.config["telegram"].get("parse_mode", ParseMode.HTML)
                 )
             else:
                 # Send text only
